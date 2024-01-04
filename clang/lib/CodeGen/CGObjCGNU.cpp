@@ -1683,6 +1683,10 @@ class CGObjCGNUstep2 : public CGObjCGNUstep {
     CharUnits Align = CGM.getIntAlign();
     llvm::Value *Offset =
         CGF.Builder.CreateAlignedLoad(IntTy, IvarOffsetPointer, Align);
+    if (CGM.getTriple().isOSBinFormatCOFF()
+        && Interface->hasAttr<DLLExportAttr>()
+        && Ivar->getAccessControl() == ObjCIvarDecl::Public)
+        IvarOffsetPointer->setDLLStorageClass(llvm::GlobalValue::DLLExportStorageClass);
     if (Offset->getType() != PtrDiffTy)
       Offset = CGF.Builder.CreateZExtOrBitCast(Offset, PtrDiffTy);
     return Offset;
@@ -1851,6 +1855,10 @@ class CGObjCGNUstep2 : public CGObjCGNUstep {
                     llvm::GlobalValue::HiddenVisibility :
                     llvm::GlobalValue::DefaultVisibility;
         OffsetVar->setVisibility(ivarVisibility);
+        if (IsCOFF
+            && classDecl->hasAttr<DLLImportAttr>()
+            && ivarVisibility == llvm::GlobalValue::DefaultVisibility)
+              OffsetVar->setDLLStorageClass(llvm::GlobalValue::DLLImportStorageClass);
         ivarBuilder.add(OffsetVar);
         // Ivar size
         ivarBuilder.addInt(Int32Ty,
