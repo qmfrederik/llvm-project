@@ -148,6 +148,9 @@ static const EHPersonality &getObjCPersonality(const TargetInfo &Target,
   if (T.isWindowsMSVCEnvironment())
     return EHPersonality::MSVC_CxxFrameHandler3;
 
+  if (T.isOSCygMing())
+    return EHPersonality::GNU_CPlusPlus_SEH;
+
   switch (L.ObjCRuntime.getKind()) {
   case ObjCRuntime::FragileMacOSX:
     return getCPersonality(Target, L);
@@ -194,6 +197,9 @@ static const EHPersonality &getObjCXXPersonality(const TargetInfo &Target,
                                                  const LangOptions &L) {
   if (Target.getTriple().isWindowsMSVCEnvironment())
     return EHPersonality::MSVC_CxxFrameHandler3;
+
+  if (Target.getTriple().isOSCygMing())
+    return EHPersonality::GNU_CPlusPlus_SEH;
 
   switch (L.ObjCRuntime.getKind()) {
   // In the fragile ABI, just use C++ exception handling and hope

@@ -819,11 +819,11 @@ class CGObjCGNUstep : public CGObjCGNU {
       SlotLookupSuperFn.init(&CGM, "objc_slot_lookup_super", SlotTy,
                              PtrToObjCSuperTy, SelectorTy);
       // If we're in ObjC++ mode, then we want to make
-      if (usesSEHExceptions) {
+      if (usesSEHExceptions && !CGM.getTarget().getTriple().isOSCygMing()) {
           llvm::Type *VoidTy = llvm::Type::getVoidTy(VMContext);
           // void objc_exception_rethrow(void)
           ExceptionReThrowFn.init(&CGM, "objc_exception_rethrow", VoidTy);
-      } else if (CGM.getLangOpts().CPlusPlus) {
+      } else if (CGM.getLangOpts().CPlusPlus || CGM.getTarget().getTriple().isOSCygMing()) {
         llvm::Type *VoidTy = llvm::Type::getVoidTy(VMContext);
         // void *__cxa_begin_catch(void *e)
         EnterCatchFn.init(&CGM, "__cxa_begin_catch", PtrTy, PtrTy);
@@ -2384,10 +2384,10 @@ llvm::Constant *CGObjCGNU::GetEHType(QualType T) {
 }
 
 llvm::Constant *CGObjCGNUstep::GetEHType(QualType T) {
-  if (usesSEHExceptions)
+  if (usesSEHExceptions && !CGM.getTarget().getTriple().isOSCygMing())
     return CGM.getCXXABI().getAddrOfRTTIDescriptor(T);
 
-  if (!CGM.getLangOpts().CPlusPlus)
+  if (!CGM.getLangOpts().CPlusPlus && !CGM.getTarget().getTriple().isOSCygMing())
     return CGObjCGNU::GetEHType(T);
 
   // For Objective-C++, we want to provide the ability to catch both C++ and
