@@ -2226,7 +2226,11 @@ CGObjCGNU::CGObjCGNU(CodeGenModule &cgm, unsigned runtimeABIVersion,
 
   // void objc_exception_throw(id);
   ExceptionThrowFn.init(&CGM, "objc_exception_throw", VoidTy, IdTy);
-  ExceptionReThrowFn.init(&CGM, "objc_exception_throw", VoidTy, IdTy);
+  if (CGM.getTarget().getTriple().isOSCygMing()) {
+    ExceptionReThrowFn.init(&CGM, "objc_exception_rethrow", VoidTy, IdTy);
+  } else {
+    ExceptionReThrowFn.init(&CGM, "objc_exception_throw", VoidTy, IdTy);
+  }
   // int objc_sync_enter(id);
   SyncEnterFn.init(&CGM, "objc_sync_enter", IntTy, IdTy);
   // int objc_sync_exit(id);
@@ -4009,7 +4013,7 @@ void CGObjCGNU::EmitThrowStmt(CodeGenFunction &CGF,
     ExceptionAsObject = CGF.ObjCEHValueStack.back();
     isRethrow = true;
   }
-  if (isRethrow && usesSEHExceptions) {
+  if (isRethrow && (usesSEHExceptions || CGM.getTarget().getTriple().isOSCygMing())) {
     // For SEH, ExceptionAsObject may be undef, because the catch handler is
     // not passed it for catchalls and so it is not visible to the catch
     // funclet.  The real thrown object will still be live on the stack at this
