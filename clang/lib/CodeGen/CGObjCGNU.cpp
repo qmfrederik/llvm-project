@@ -819,11 +819,11 @@ class CGObjCGNUstep : public CGObjCGNU {
       SlotLookupSuperFn.init(&CGM, "objc_slot_lookup_super", SlotTy,
                              PtrToObjCSuperTy, SelectorTy);
       // If we're in ObjC++ mode, then we want to make
-      if (usesSEHExceptions && !CGM.getTarget().getTriple().isOSCygMing()) {
+      if (usesSEHExceptions || CGM.getTarget().getTriple().isOSCygMing()) {
           llvm::Type *VoidTy = llvm::Type::getVoidTy(VMContext);
           // void objc_exception_rethrow(void)
           ExceptionReThrowFn.init(&CGM, "objc_exception_rethrow", VoidTy);
-      } else if (CGM.getLangOpts().CPlusPlus || CGM.getTarget().getTriple().isOSCygMing()) {
+      } else if (CGM.getLangOpts().CPlusPlus) {
         llvm::Type *VoidTy = llvm::Type::getVoidTy(VMContext);
         // void *__cxa_begin_catch(void *e)
         EnterCatchFn.init(&CGM, "__cxa_begin_catch", PtrTy, PtrTy);
