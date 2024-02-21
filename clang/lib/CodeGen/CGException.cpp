@@ -159,7 +159,7 @@ static const EHPersonality &getObjCPersonality(const TargetInfo &Target,
     return EHPersonality::NeXT_ObjC;
   case ObjCRuntime::GNUstep:
     if (T.isOSCygMing())
-      return EHPersonality::GNU_CPlusPlus_SEH;
+      return EHPersonality::GNU_ObjC_SEH;
     else if (L.ObjCRuntime.getVersion() >= VersionTuple(1, 7))
       return EHPersonality::GNUstep_ObjC;
     [[fallthrough]];
@@ -216,7 +216,7 @@ static const EHPersonality &getObjCXXPersonality(const TargetInfo &Target,
     return getObjCPersonality(Target, L);
 
   case ObjCRuntime::GNUstep:
-    return Target.getTriple().isOSCygMing() ? EHPersonality::GNU_CPlusPlus_SEH
+    return Target.getTriple().isOSCygMing() ? EHPersonality::GNU_ObjC_SEH
                                             : EHPersonality::GNU_ObjCXX;
 
   // The GCC runtime's personality function inherently doesn't support

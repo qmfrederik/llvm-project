@@ -829,12 +829,12 @@ class CGObjCGNUstep : public CGObjCGNU {
       // If we're in ObjC++ mode, then we want to make
       llvm::Type *VoidTy = llvm::Type::getVoidTy(VMContext);
       if (usesCxxExceptions) {
-        // void *__cxa_begin_catch(void *e)
-        EnterCatchFn.init(&CGM, "__cxa_begin_catch", PtrTy, PtrTy);
-        // void __cxa_end_catch(void)
-        ExitCatchFn.init(&CGM, "__cxa_end_catch", VoidTy);
-        // void objc_exception_rethrow(void*)
-        ExceptionReThrowFn.init(&CGM, "__cxa_rethrow", PtrTy);
+        // void *objc_begin_catch(void *e)
+        EnterCatchFn.init(&CGM, "objc_begin_catch", PtrTy, PtrTy);
+        // void objc_end_catch(void)
+        ExitCatchFn.init(&CGM, "objc_end_catch", VoidTy);
+        // void objc_exception_rethrow(void)
+        ExceptionReThrowFn.init(&CGM, "objc_exception_rethrow", VoidTy);
       } else if (usesSEHExceptions) {
         // void objc_exception_rethrow(void)
         ExceptionReThrowFn.init(&CGM, "objc_exception_rethrow", VoidTy);
