@@ -9,12 +9,15 @@ jobs:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
-      - name: Build clang, lld
+      - name: Configure
         run: |
           mkdir build
           cd build
-          cmake ../llvm -DLLVM_ENABLE_PROJECTS=clang;lld -DLLVM_TARGETS_TO_BUILD=host -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
-          cmake --build . --config Release
+          cmake ../llvm -DLLVM_ENABLE_PROJECTS="clang;lld" -DLLVM_TARGETS_TO_BUILD=host -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+      - name: Build clang, lld and llvm-rc
+        run: |
+          cd build
+          cmake --build . --config Release --target lld clang llvm-rc
       - uses: actions/upload-artifact@v4
         if: always()
         with:
