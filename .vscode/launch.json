@@ -1,0 +1,42 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch lldb",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/bin/lldb",
+            "args": [
+                "${workspaceFolder}/lldb/test/API/lang/objc-gnustep/foundation/foundation",
+            ]
+        },
+        {
+            "name": "Launch test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/lldb/test/API/dotest.py",
+            "args": [
+                 "-u", "CXXFLAGS",
+                 "-u", "CFLAGS",
+                 "--env", "LLVM_LIBS_DIR=${workspaceFolder}/build/./lib",
+                 "--env", "LLVM_INCLUDE_DIR=${workspaceFolder}/build/include",
+                 "--env", "LLVM_TOOLS_DIR=${workspaceFolder}/build/./bin",
+                 "--arch", "x86_64",
+                 "--build-dir", "${workspaceFolder}/build/lldb-test-build.noindex",
+                 "--lldb-module-cache-dir", "${workspaceFolder}/build/lldb-test-build.noindex/module-cache-lldb/lldb-api",
+                 "--clang-module-cache-dir", "${workspaceFolder}/build/lldb-test-build.noindex/module-cache-clang/lldb-api",
+                 "--executable", "${workspaceFolder}/build/./bin/lldb",
+                 "--compiler", "${workspaceFolder}/build/./bin/clang",
+                 "--dsymutil", "${workspaceFolder}/build/./bin/dsymutil",
+                 "--make", "/usr/bin/gmake",
+                 "--llvm-tools-dir", "${workspaceFolder}/build/./bin",
+                 "--lldb-obj-root", "${workspaceFolder}/build/tools/lldb",
+                 "--lldb-libs-dir", "${workspaceFolder}/build/./lib",
+                 "--cmake-build-type", "Debug",
+                 "${workspaceFolder}/lldb/test/API/lang/objc/objc-property",
+                 "-p", "TestObjCProperty.py"
+            ],
+            "console": "integratedTerminal"
+        }
+    ]
+}
