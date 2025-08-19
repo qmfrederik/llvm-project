@@ -5,10 +5,16 @@
             "name": "Launch lldb",
             "type": "lldb",
             "request": "launch",
-            "program": "${workspaceFolder}/build/bin/lldb",
+            "program": "${workspaceFolder}/llvm/build2/bin/lldb",
             "args": [
                 "${workspaceFolder}/lldb/test/API/lang/objc-gnustep/foundation/foundation",
             ]
+        },
+        {
+            "name": "Launch lldb (objc)",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/lldb/test/API/lang/objc-gnustep/foundation/foundation"
         },
         {
             "name": "Launch test",

@@ -1,0 +1,9 @@
+{
+    "lldb.library": "/home/qmfrederik/git/llvm-project/llvm/build2/lib/liblldb.so",
+    "files.associations": {
+        "sim_map": "cpp",
+        "sim_set": "cpp",
+        "sim_unordered_map": "cpp",
+        "sim_unordered_set": "cpp"
+    }
+}
