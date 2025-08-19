@@ -1,6 +1,5 @@
 #import <Foundation/Foundation.h>
 const char *_NSPrintForDebugger(id object);
-
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
         // Test Foundation collection types
@@ -9,12 +8,6 @@ int main(int argc, const char * argv[]) {
         NSArray *immutableArray = @[@"Apple", @"Banana", @"Cherry", @"Date"];
         NSMutableArray *mutableArray = [NSMutableArray arrayWithArray:immutableArray];
         [mutableArray addObject:@"Elderberry"];
-        fprintf(stdout, ">>>\n");
-        fprintf(stdout, "immutableArray (%x): %s\n", immutableArray, _NSPrintForDebugger(immutableArray));
-        fprintf(stdout, ">>>\n");
-        fprintf(stdout, "mutableArray (%x): %s\n", mutableArray, _NSPrintForDebugger(mutableArray));
-        fprintf(stdout, ">>>\n");
-        fprintf(stdout, "NULL: %s\n", _NSPrintForDebugger(NULL));
 
         // Dictionary tests
         NSDictionary *immutableDict = @{
