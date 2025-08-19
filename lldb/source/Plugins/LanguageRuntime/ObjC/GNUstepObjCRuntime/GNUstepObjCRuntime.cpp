@@ -13,6 +13,8 @@
 #include "lldb/Core/Module.h"
 #include "lldb/Core/PluginManager.h"
 #include "lldb/Expression/UtilityFunction.h"
+#include "lldb/Expression/DiagnosticManager.h"
+#include "lldb/Expression/FunctionCaller.h"
 #include "lldb/Target/ExecutionContext.h"
 #include "lldb/Target/Process.h"
 #include "lldb/Target/Target.h"
@@ -106,13 +108,138 @@ GNUstepObjCRuntime::GNUstepObjCRuntime(Process *process)
 
 llvm::Error GNUstepObjCRuntime::GetObjectDescription(Stream &str,
                                                      ValueObject &valobj) {
-  return llvm::createStringError(
-      "LLDB's GNUStep runtime does not support object description");
+  CompilerType compiler_type(valobj.GetCompilerType());
+  bool is_signed;
+  // ObjC objects can only be pointers (or numbers that actually represents
+  // pointers but haven't been typecast, because reasons..)
+  if (!compiler_type.IsIntegerType(is_signed) && !compiler_type.IsPointerType())
+    return llvm::createStringError("not a pointer type");
+
+  ExecutionContext exe_ctx = ExecutionContext(valobj.GetExecutionContextRef());
+
+  // Make the argument list: we pass one arg, the address of our pointer, to
+  // the print function.
+  Value value = valobj.GetValue();
+  return GetObjectDescription(str, value, exe_ctx.GetBestExecutionContextScope());
 }
 
 llvm::Error
 GNUstepObjCRuntime::GetObjectDescription(Stream &strm, Value &value,
-                                         ExecutionContextScope *exe_scope) {
+                                         ExecutionContextScope *exe_scope) {     
+  ExecutionContext exe_ctx;
+  exe_scope->CalculateExecutionContext(exe_ctx);                                     
+  Process *process = exe_ctx.GetProcessPtr();
+  if (!process)
+    return llvm::createStringError("no process");
+
+  // Get _NSPrintForDebugger
+  const ModuleList &modules = m_process->GetTarget().GetImages();
+
+  SymbolContextList contexts;
+  SymbolContext context;
+
+  modules.FindSymbolsWithNameAndType(ConstString("_NSPrintForDebugger"),
+                                      eSymbolTypeCode, contexts);
+
+  if (contexts.IsEmpty())
+    return llvm::createStringError(
+        "Could not resolve _NSPrintForDebugger");
+
+  contexts.GetContextAtIndex(0, context);
+  Address _printForDebugger = context.symbol->GetAddress();
+
+  CompilerType compiler_type = value.GetCompilerType();
+  if (compiler_type) {
+    if (!TypeSystemClang::IsObjCObjectPointerType(compiler_type))
+      return llvm::createStringError(
+          "Value doesn't point to an ObjC object.\n");
+  }
+
+  Target *target2 = exe_ctx.GetTargetPtr();
+  TypeSystemClangSP scratch_ts_sp2 =
+      ScratchTypeSystemClang::GetForTarget(*target2);
+  CompilerType opaque_type = scratch_ts_sp2->GetBasicType(eBasicTypeObjCID);
+  opaque_type =
+      scratch_ts_sp2->GetBasicType(eBasicTypeVoid).GetPointerType();
+  value.SetCompilerType(opaque_type);
+
+  ValueList arg_value_list;
+  arg_value_list.PushValue(value);
+
+  // This is the return value:
+  Target *target = exe_ctx.GetTargetPtr();
+  TypeSystemClangSP scratch_ts_sp =
+      ScratchTypeSystemClang::GetForTarget(*target);
+  if (!scratch_ts_sp)
+    return llvm::createStringError("no scratch type system");
+
+  CompilerType return_compiler_type = scratch_ts_sp->GetCStringType(true);
+  Value ret;
+  ret.SetCompilerType(return_compiler_type);
+
+  if (!exe_ctx.GetFramePtr())
+    return llvm::createStringError("no frame pointer");
+
+  // Now we're ready to call the function:
+  DiagnosticManager diagnostics;
+  lldb::addr_t wrapper_struct_addr = LLDB_INVALID_ADDRESS;
+
+  Status error;
+
+  std::unique_ptr<FunctionCaller> m_print_object_caller_up;
+  if (!m_print_object_caller_up) {
+    Status error;
+    m_print_object_caller_up.reset(
+        exe_scope->CalculateTarget()->GetFunctionCallerForLanguage(
+            eLanguageTypeObjC, return_compiler_type, _printForDebugger,
+            arg_value_list, "objc-object-description", error));
+    if (error.Fail()) {
+      m_print_object_caller_up.reset();
+      return llvm::createStringError(
+          llvm::Twine(
+              "could not get function runner to call print for debugger "
+              "function: ") +
+          error.AsCString());
+    }
+    m_print_object_caller_up->InsertFunction(exe_ctx, wrapper_struct_addr,
+                                             diagnostics);
+  } else {
+    m_print_object_caller_up->WriteFunctionArguments(
+        exe_ctx, wrapper_struct_addr, arg_value_list, diagnostics);
+  }
+
+  EvaluateExpressionOptions options;
+  options.SetUnwindOnError(true);
+  options.SetTryAllThreads(true);
+  options.SetStopOthers(true);
+  options.SetIgnoreBreakpoints(true);
+  options.SetTimeout(process->GetUtilityExpressionTimeout());
+  options.SetIsForUtilityExpr(true);
+
+  ExpressionResults results = m_print_object_caller_up->ExecuteFunction(
+      exe_ctx, &wrapper_struct_addr, options, diagnostics, ret);
+
+  if (results != eExpressionCompleted)
+    return llvm::createStringError(
+        "could not evaluate print object function");
+
+  addr_t result_ptr = ret.GetScalar().ULongLong(LLDB_INVALID_ADDRESS);
+
+  char buf[512];
+  size_t cstr_len = 0;
+  size_t full_buffer_len = sizeof(buf) - 1;
+  size_t curr_len = full_buffer_len;
+  while (curr_len == full_buffer_len) {
+    Status error;
+    curr_len = process->ReadCStringFromMemory(result_ptr + cstr_len, buf,
+                                              sizeof(buf), error);
+    strm.Write(buf, curr_len);
+    cstr_len += curr_len;
+  }
+
+  if (cstr_len > 0)
+    return llvm::Error::success();
+
   return llvm::createStringError(
       "LLDB's GNUStep runtime does not support object description");
 }
