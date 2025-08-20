@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "GNUstepObjCRuntime.h"
+#include "GNUstepObjCClassDescriptor.h"
 
 #include "Plugins/TypeSystem/Clang/TypeSystemClang.h"
 
@@ -20,6 +21,8 @@
 #include "lldb/Target/Target.h"
 #include "lldb/Utility/ArchSpec.h"
 #include "lldb/Utility/ConstString.h"
+#include "lldb/Utility/LLDBLog.h"
+#include "lldb/Utility/Log.h"
 #include "lldb/ValueObject/ValueObject.h"
 
 using namespace lldb;
@@ -333,6 +336,15 @@ GNUstepObjCRuntime::GetStepThroughTrampolinePlan(Thread &thread,
 
 void GNUstepObjCRuntime::UpdateISAToDescriptorMapIfNeeded() {
   // TODO: Support lazily named and dynamically loaded Objective-C classes
+}
+
+ObjCLanguageRuntime::ClassDescriptorSP
+GNUstepObjCRuntime::GetClassDescriptorFromISA(ObjCISA isa) {
+  if (!isa)
+    return ClassDescriptorSP();
+  
+  return ObjCLanguageRuntime::ClassDescriptorSP(
+      new GNUstepClassDescriptor(isa, m_process));
 }
 
 bool GNUstepObjCRuntime::IsModuleObjCLibrary(const ModuleSP &module_sp) {

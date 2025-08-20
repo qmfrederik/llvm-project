@@ -99,6 +99,8 @@ public:
 
   void UpdateISAToDescriptorMapIfNeeded() override;
 
+  ObjCLanguageRuntime::ClassDescriptorSP GetClassDescriptorFromISA(ObjCISA isa) override;
+
 protected:
   // Call CreateInstance instead.
   GNUstepObjCRuntime(Process *process);
